@@ -1,3 +1,4 @@
+var debug = require('debug')('numstr');
 var partial = require('lodash.partial');
 var defaults = require('defaults');
 
@@ -76,42 +77,53 @@ var okThingsRegExp = new RegExp(okThings, 'ig');
 var numRegExp = new RegExp(numbers, 'ig');
 var expandedNumRegExp = new RegExp('(\\b((' + numbers + ')((' + okWords + ')|(' + okThings + '))*)+\\b)', 'ig');
 
-var total, mult, lastMult, isNewMult, suff, val;
+var state = {
+  total: 0,
+  mult: 0,
+  lastMult: 0,
+  isNewMult: 0,
+  suffix: 0,
+  val: 0
+};
+
 
 // processes a simple number word
-function num (n, options) {
-  val = n;
-  if (suff) {
-    val += suff;
-    suff = 0;
+function num (number, options) {
+  debug('processing number: %s', number);
+  state.val = number;
+  if (state.suffix) {
+    state.val += state.suffix;
+    state.suffix = 0;
   }
-  total += val * mult;
-  isNewMult = 0;
+  state.total += state.val * state.mult;
+  state.isNewMult = 0;
 }
 
 // processes a multiplier like thousands, dozen, etc
-function multiplier (m, options) {
-  if (m > lastMult) {
-    if (isNewMult) { total += mult; }
-    mult = 1;
+function multiplier (mult, options) {
+  debug('processing multiplier: %s', mult);
+  if (mult > state.lastMult) {
+    if (state.isNewMult) { state.total += state.mult; }
+    state.mult = 1;
   }
-  mult *= m;
-  lastMult = m;
-  isNewMult = 1;
+  state.mult *= mult;
+  state.lastMult = mult;
+  state.isNewMult = 1;
 }
 
 // processes an exponential multiplier
-function powMultiplier (p, options) {
+function powMultiplier (pow, options) {
   if (options.scale === 'long') {
-    multiplier(Math.pow(10, (p * 6)));
+    multiplier(Math.pow(10, (pow * 6)));
   } else {
-    multiplier(Math.pow(10, (p + 1) * 3));
+    multiplier(Math.pow(10, (pow + 1) * 3));
   }
 }
 
 // processes s number suffice like teen
-function suffix(s, options) {
-  suff = s;
+function suffix(suff, options) {
+  debug('processing suffix: %s', suff);
+  state.suffix = suff;
 }
 
 // processes a googol multiplier
@@ -126,7 +138,8 @@ function googolplex (options) {
 
 // inverts the current total
 function invert(options) {
-  total *= -1;
+  debug('inverting');
+  state.total *= -1;
 }
 
 // converts english words to numbers
@@ -143,16 +156,19 @@ function words2nums (words, options) {
     throw Error('+ or - not at beginning');
   }
   w = w.replace(okWordsRegExp, '', 'g');
-  w = w.replace(okThingsRegExp, '', 'g');
+  w = w.replace(okThingsRegExp, ' ', 'g');
   if (!w.length) {
     return Error('not a number');
   }
 
-  total = lastMult = suff = isNewMult = 0;
-  mult = 1;
+  debug('simplified input:', w);
+
+  state.total = state.lastMult = state.suffix = state.isNewMult = 0;
+  state.mult = 1;
 
   var match, name;
   match = w.match(numRegExp).reverse();
+  debug('tokens found:', match);
   match.forEach(function (part) {
     var test;
     if ((test = /(\d+)(?:st|nd|rd|th)?$/.exec(part)) !== null) {
@@ -160,11 +176,12 @@ function words2nums (words, options) {
     } else if (part) {
       nameFuncs[part](options);
     } else {
-      console.log('no handler found for %s', part);
+      debug('no handler found for %s', part);
     }
+    debug('state:', state);
   });
-  if (isNewMult) { total += mult; }
-  return total;
+  if (state.isNewMult) { state.total += state.mult; }
+  return state.total;
 }
 
 // returns instances of numbers in text
