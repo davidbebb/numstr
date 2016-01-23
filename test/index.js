@@ -14,6 +14,7 @@ describe('words2nums', function () {
     assert.equal(words2nums('three thousand four hundred ninety-nine'), 3499);
     assert.equal(words2nums('5 dozen'), 60);
     assert.equal(words2nums('four score and 7'), 87);
+    assert.equal(words2nums('four thousand three hundred fifty two'), 4352);
   });
 });
 
