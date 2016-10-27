@@ -4,12 +4,14 @@ var defaults = require('defaults');
 
 // hash of funcs used to process number words
 var nameFuncs = {
+  half: partial(num, 0.5),
+  quarter: partial(num, 0.25),
   naught: partial(num, 0),
   nought: partial(num, 0),
   zero: partial(num, 0),
-  one: partial(num, 1),       first: partial(num, 1),
-  two: partial(num, 2),       second: partial(num, 2),
-  three: partial(num, 3),     third: partial(num, 3),
+  one: partial(num, 1),       first: partial(num, 1), once: partial(num, 1),
+  two: partial(num, 2),       second: partial(num, 2), twice: partial(num, 2),
+  three: partial(num, 3),     third: partial(num, 3), thrice: partial(num, 3),
   four: partial(num, 4),      fourth: partial(num, 4),
   five: partial(num, 5),      fifth: partial(num, 5),
   six: partial(num, 6),
@@ -98,6 +100,10 @@ function num (number, options) {
   state.total += state.val * state.mult;
   state.isNewMult = 0;
 }
+
+//TODO write fraction to deal with e.g. three quarters
+
+
 
 // processes a multiplier like thousands, dozen, etc
 function multiplier (mult, options) {
